@@ -67,24 +67,10 @@
 
 use atty;
 use clap;
-use lazy_static;
 use rand::{self, Rng};
 use rand_core::SeedableRng;
 use rand_xorshift;
-use std::sync::{Arc, Mutex};
 use std::time::SystemTime;
-
-lazy_static::lazy_static! {
-    static ref FAST: Arc<Mutex<rand_xorshift::XorShiftRng>> = {
-        let now = SystemTime::now();
-        let seed = now
-            .duration_since(SystemTime::UNIX_EPOCH)
-            .map(|d| d.as_secs())
-            .unwrap();
-        let rng = rand_xorshift::XorShiftRng::seed_from_u64(seed);
-        Arc::new(Mutex::new(rng))
-    };
-}
 
 #[derive(Clone, Copy)]
 enum OutputCharsType {
@@ -118,31 +104,16 @@ where
             let uniform = rand::distributions::Uniform::from(0x21..=0x7e);
             rng.sample_iter(&uniform)
                 .take(number_of_characters)
-                .filter_map(|n| std::char::from_u32(n))
+                .filter_map(std::char::from_u32)
                 .collect()
         }
         OutputCharsType::PrintableAsciiWithSpace => {
             let uniform = rand::distributions::Uniform::from(0x20..=0x7e);
             rng.sample_iter(&uniform)
                 .take(number_of_characters)
-                .filter_map(|n| std::char::from_u32(n))
+                .filter_map(std::char::from_u32)
                 .collect()
         }
-    }
-}
-
-fn gen_random_string(
-    number_of_characters: usize,
-    output_chars_type: OutputCharsType,
-    should_use_fast_rng: bool,
-) -> String {
-    if should_use_fast_rng {
-        let fast = FAST.clone();
-        let mut rng = fast.lock().unwrap();
-        gen_random_string_with_rng(&mut *rng, number_of_characters, output_chars_type)
-    } else {
-        let mut rng = rand::thread_rng();
-        gen_random_string_with_rng(&mut rng, number_of_characters, output_chars_type)
     }
 }
 
@@ -230,19 +201,32 @@ fn main() {
     };
 
     let is_stdout = atty::is(atty::Stream::Stdout);
-    std::iter::repeat(())
-        .take(number_of_lines)
-        .map(|_| gen_random_string(number_of_characters, output_chars_type, should_use_fast_rng))
-        .enumerate()
-        .for_each(|(i, s)| {
-            if is_stdout {
-                println!("{}", s);
-            } else {
-                if i == (number_of_lines - 1) {
-                    print!("{}", s);
-                } else {
-                    println!("{}", s);
-                }
-            }
-        });
+    let printing = |(i, s)| {
+        if i == (number_of_lines - 1) && !is_stdout {
+            print!("{}", s);
+        } else {
+            println!("{}", s);
+        }
+    };
+
+    let iterator = std::iter::repeat(()).take(number_of_lines);
+
+    if should_use_fast_rng {
+        let now = SystemTime::now();
+        let seed = now
+            .duration_since(SystemTime::UNIX_EPOCH)
+            .map(|d| d.as_secs())
+            .unwrap();
+        let mut rng = rand_xorshift::XorShiftRng::seed_from_u64(seed);
+        iterator
+            .map(|_| gen_random_string_with_rng(&mut rng, number_of_characters, output_chars_type))
+            .enumerate()
+            .for_each(printing);
+    } else {
+        let mut rng = rand::thread_rng();
+        iterator
+            .map(|_| gen_random_string_with_rng(&mut rng, number_of_characters, output_chars_type))
+            .enumerate()
+            .for_each(printing);
+    }
 }
