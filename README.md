@@ -60,6 +60,8 @@ XBDSOETSLzUR
 - `-n`, `--numeric` option sets to restrict the output to be numeric.
 - `-p`, `--printable-ascii` options sets to use [the printable ASCII](https://en.wikipedia.org/wiki/ASCII#Printable_characters) *without* `SPACE`.
 - `-P`, `--printable-ascii-with-space` options sets to use [the printable ASCII](https://en.wikipedia.org/wiki/ASCII#Printable_characters) *with* `SPACE`.
+- `--only-upper-case` option sets to use upper case letters only.
+- `--only-lower-case` option sets to use lower case letters only.
 
 ## License
 

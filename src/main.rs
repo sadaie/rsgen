@@ -1,69 +1,71 @@
-//!  # `rsgen`
-//!  `rsgen` is a command line tool that generates random characters string(s).
-//!  
-//!  ## Install
-//!  
-//!  **`rsgen` is written in Rust. Thus you should install the latest Rust ecosystem in advance.**  
-//!  **refs. [rustup](https://rustup.rs/)**
-//!  
-//!  ### With `cargo install`
-//!  
-//!  ```
-//!  $ cargo install -f rsgen
-//!  ```
-//!  
-//!  ### Build from source code
-//!  
-//!  ```
-//!  $ git clone https://github.com/sadaie/rsgen.git
-//!  $ cd rsgen
-//!  $ cargo build --release
-//!  $ ls target/release/
-//!  build       deps        examples    incremental native      rsgen      rsgen.d
-//!  ```
-//!  
-//!  ## Usage
-//!  
-//!  ### Generating a random characters string.
-//!  
-//!  ```
-//!  $ rsgen
-//!  V05ZHhKa
-//!  ```
-//!  
-//!  ### Generating a specified-length rondom characters string.
-//!  
-//!  ```
-//!  $ rsgen -c 12
-//!  TpzjXxem3U5x
-//!  ```
-//!  
-//!  ### Generating a specified-length rondom characters string for ten times.
-//!  
-//!  ```
-//!  $ rsgen -c 12 -l 10
-//!  2S18UasnECKx
-//!  xCLlTp4tZmn3
-//!  f9jsbGnSWZtB
-//!  jFrPnstxHsr8
-//!  K9xZAK0R8KHH
-//!  85EXezRgeceo
-//!  QOtY5BFwEZBl
-//!  HBaFlCFN7t9W
-//!  blOM7ZsviUBw
-//!  XBDSOETSLzUR
-//!  ```
-//!  
-//!  #### Additional options
-//!  
-//!  - `-f`, `--fast` option sets to use the fast but *NOT* secure RNG, [Xorshift](https://en.wikipedia.org/wiki/Xorshift).
-//!  - `-n`, `--numeric` option sets to restrict the output to be numeric.
-//!  - `-p`, `--printable-ascii` options sets to use [the printable ASCII](https://en.wikipedia.org/wiki/ASCII#Printable_characters) *without* `SPACE`.
-//!  - `-P`, `--printable-ascii-with-space` options sets to use [the printable ASCII](https://en.wikipedia.org/wiki/ASCII#Printable_characters) *with* `SPACE`.
-//!  
-//!  ## License
-//!  
-//!  MIT lincense.  
+//! # `rsgen`
+//! `rsgen` is a command line tool that generates random characters string(s).
+//! 
+//! ## Install
+//! 
+//! **`rsgen` is written in Rust. Thus you should install the latest Rust ecosystem in advance.**  
+//! **refs. [rustup](https://rustup.rs/)**
+//! 
+//! ### With `cargo install`
+//! 
+//! ```
+//! $ cargo install -f rsgen
+//! ```
+//! 
+//! ### Build from source code
+//! 
+//! ```
+//! $ git clone https://github.com/sadaie/rsgen.git
+//! $ cd rsgen
+//! $ cargo build --release
+//! $ ls target/release/
+//! build       deps        examples    incremental native      rsgen      rsgen.d
+//! ```
+//! 
+//! ## Usage
+//! 
+//! ### Generating a random characters string.
+//! 
+//! ```
+//! $ rsgen
+//! V05ZHhKa
+//! ```
+//! 
+//! ### Generating a specified-length rondom characters string.
+//! 
+//! ```
+//! $ rsgen -c 12
+//! TpzjXxem3U5x
+//! ```
+//! 
+//! ### Generating a specified-length rondom characters string for ten times.
+//! 
+//! ```
+//! $ rsgen -c 12 -l 10
+//! 2S18UasnECKx
+//! xCLlTp4tZmn3
+//! f9jsbGnSWZtB
+//! jFrPnstxHsr8
+//! K9xZAK0R8KHH
+//! 85EXezRgeceo
+//! QOtY5BFwEZBl
+//! HBaFlCFN7t9W
+//! blOM7ZsviUBw
+//! XBDSOETSLzUR
+//! ```
+//! 
+//! #### Additional options
+//! 
+//! - `-f`, `--fast` option sets to use the fast but *NOT* secure RNG, [Xorshift](https://en.wikipedia.org/wiki/Xorshift).
+//! - `-n`, `--numeric` option sets to restrict the output to be numeric.
+//! - `-p`, `--printable-ascii` option sets to use [the printable ASCII](https://en.wikipedia.org/wiki/ASCII#Printable_characters) *without* `SPACE`.
+//! - `-P`, `--printable-ascii-with-space` option sets to use [the printable ASCII](https://en.wikipedia.org/wiki/ASCII#Printable_characters) *with* `SPACE`.
+//! - `--only-upper-case` option sets to use upper case letters only.
+//! - `--only-lower-case` option sets to use lower case letters only.
+//! 
+//! ## License
+//! 
+//! MIT lincense.  
 
 use atty;
 use clap;
@@ -179,6 +181,18 @@ fn main() {
                 .short("f")
                 .long("fast"),
         )
+        .arg(
+            clap::Arg::with_name("only-upper-case")
+                .help("Uses upper case letters only.")
+                .long("only-upper-case")
+                .conflicts_with("only-lower-case"),
+        )
+        .arg(
+            clap::Arg::with_name("only-lower-case")
+                .help("Uses lower case letters only.")
+                .long("only-lower-case")
+                .conflicts_with("only-upper-case"),
+        )
         .get_matches();
 
     let number_of_characters: usize = matches
@@ -199,9 +213,18 @@ fn main() {
     } else {
         OutputCharsType::Alphanumeric
     };
+    let is_upper_only = matches.is_present("only-upper-case");
+    let is_lower_only = matches.is_present("only-lower-case");
 
     let is_stdout = atty::is(atty::Stream::Stdout);
-    let printing = |(i, s)| {
+    let printing = |(i, s): (usize, String)| {
+        let s = if is_upper_only {
+            s.to_ascii_uppercase()
+        } else if is_lower_only {
+            s.to_ascii_lowercase()
+        } else {
+            s.to_owned()
+        };
         if i == (number_of_lines - 1) && !is_stdout {
             print!("{}", s);
         } else {

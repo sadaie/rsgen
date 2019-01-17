@@ -1,6 +1,6 @@
 [package]
 name = "rsgen"
-version = "0.1.1"
+version = "0.1.2"
 authors = ["Sadaie Matsudaira <sadaie@matsuri-hi.me>"]
 edition = "2018"
 description = "Generates random characters string(s)."
