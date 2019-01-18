@@ -58,10 +58,11 @@ XBDSOETSLzUR
 
 - `-f`, `--fast` option sets to use the fast but *NOT* secure RNG, [Xorshift](https://en.wikipedia.org/wiki/Xorshift).
 - `-n`, `--numeric` option sets to restrict the output to be numeric.
-- `-p`, `--printable-ascii` options sets to use [the printable ASCII](https://en.wikipedia.org/wiki/ASCII#Printable_characters) *without* `SPACE`.
-- `-P`, `--printable-ascii-with-space` options sets to use [the printable ASCII](https://en.wikipedia.org/wiki/ASCII#Printable_characters) *with* `SPACE`.
+- `-p`, `--printable-ascii` option sets to use [the printable ASCII](https://en.wikipedia.org/wiki/ASCII#Printable_characters) *without* `SPACE`.
+- `-P`, `--printable-ascii-with-space` option sets to use [the printable ASCII](https://en.wikipedia.org/wiki/ASCII#Printable_characters) *with* `SPACE`.
 - `--only-upper-case` option sets to use upper case letters only.
 - `--only-lower-case` option sets to use lower case letters only.
+- `--only-latin-alphabet` option sets to use the Latin alphabet only, *not* includes numeric characters.
 
 ## License
 
