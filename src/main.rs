@@ -1,19 +1,19 @@
 //! # `rsgen`
 //! `rsgen` is a command line tool that generates random characters string(s).
-//! 
+//!
 //! ## Install
-//! 
+//!
 //! **`rsgen` is written in Rust. Thus you should install the latest Rust ecosystem in advance.**  
 //! **refs. [rustup](https://rustup.rs/)**
-//! 
+//!
 //! ### With `cargo install`
-//! 
+//!
 //! ```
 //! $ cargo install -f rsgen
 //! ```
-//! 
+//!
 //! ### Build from source code
-//! 
+//!
 //! ```
 //! $ git clone https://github.com/sadaie/rsgen.git
 //! $ cd rsgen
@@ -21,25 +21,25 @@
 //! $ ls target/release/
 //! build       deps        examples    incremental native      rsgen      rsgen.d
 //! ```
-//! 
+//!
 //! ## Usage
-//! 
+//!
 //! ### Generating a random characters string.
-//! 
+//!
 //! ```
 //! $ rsgen
 //! V05ZHhKa
 //! ```
-//! 
+//!
 //! ### Generating a specified-length rondom characters string.
-//! 
+//!
 //! ```
 //! $ rsgen -c 12
 //! TpzjXxem3U5x
 //! ```
-//! 
+//!
 //! ### Generating a specified-length rondom characters string for ten times.
-//! 
+//!
 //! ```
 //! $ rsgen -c 12 -l 10
 //! 2S18UasnECKx
@@ -53,18 +53,19 @@
 //! blOM7ZsviUBw
 //! XBDSOETSLzUR
 //! ```
-//! 
+//!
 //! #### Additional options
-//! 
+//!
 //! - `-f`, `--fast` option sets to use the fast but *NOT* secure RNG, [Xorshift](https://en.wikipedia.org/wiki/Xorshift).
 //! - `-n`, `--numeric` option sets to restrict the output to be numeric.
 //! - `-p`, `--printable-ascii` option sets to use [the printable ASCII](https://en.wikipedia.org/wiki/ASCII#Printable_characters) *without* `SPACE`.
 //! - `-P`, `--printable-ascii-with-space` option sets to use [the printable ASCII](https://en.wikipedia.org/wiki/ASCII#Printable_characters) *with* `SPACE`.
 //! - `--only-upper-case` option sets to use upper case letters only.
 //! - `--only-lower-case` option sets to use lower case letters only.
-//! 
+//! - `--only-latin-alphabet` option sets to use the Latin alphabet only, *not* includes numeric characters.
+//!
 //! ## License
-//! 
+//!
 //! MIT lincense.  
 
 use atty;
@@ -76,7 +77,14 @@ use std::time::SystemTime;
 
 #[derive(Clone, Copy)]
 enum OutputCharsType {
-    Alphanumeric,
+    LatinAlphabet {
+        use_upper_case: bool,
+        use_lower_case: bool,
+    },
+    LatinAlphabetAndNumeric {
+        use_upper_case: bool,
+        use_lower_case: bool,
+    },
     Numeric,
     PrintableAsciiWithoutSpace,
     PrintableAsciiWithSpace,
@@ -91,10 +99,46 @@ where
     R: Rng,
 {
     match output_chars_type {
-        OutputCharsType::Alphanumeric => rng
-            .sample_iter(&rand::distributions::Alphanumeric)
-            .take(number_of_characters)
-            .collect(),
+        OutputCharsType::LatinAlphabet {
+            use_upper_case,
+            use_lower_case,
+        } => {
+            let range = match (use_upper_case, use_lower_case) {
+                (true, true) => 26 + 26,
+                _ => 26,
+            };
+            let charset: &[u8] = match (use_upper_case, use_lower_case) {
+                (true, true) => b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz",
+                (true, false) => b"ABCDEFGHIJKLMNOPQRSTUVWXYZ",
+                (false, true) => b"abcdefghijklmnopqrstuvwxyz",
+                _ => unreachable!(),
+            };
+            let uniformed = rand::distributions::Uniform::from(0..range);
+            rng.sample_iter(&uniformed)
+                .take(number_of_characters)
+                .map(|n| charset[n as usize] as char)
+                .collect()
+        }
+        OutputCharsType::LatinAlphabetAndNumeric {
+            use_upper_case,
+            use_lower_case,
+        } => {
+            let range = match (use_upper_case, use_lower_case) {
+                (true, true) => 26 + 26 + 10,
+                _ => 26 + 10,
+            };
+            let charset: &[u8] = match (use_upper_case, use_lower_case) {
+                (true, true) => b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789",
+                (true, false) => b"ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789",
+                (false, true) => b"abcdefghijklmnopqrstuvwxyz0123456789",
+                _ => unreachable!(),
+            };
+            let uniformed = rand::distributions::Uniform::from(0..range);
+            rng.sample_iter(&uniformed)
+                .take(number_of_characters)
+                .map(|n| charset[n] as char)
+                .collect()
+        }
         OutputCharsType::Numeric => {
             let uniform = rand::distributions::Uniform::from(0..=9);
             rng.sample_iter(&uniform)
@@ -193,6 +237,12 @@ fn main() {
                 .long("only-lower-case")
                 .conflicts_with("only-upper-case"),
         )
+        .arg(
+            clap::Arg::with_name("only-latin-alphabet")
+                .help("Uses the Latin alphabet only, NOT includes numeric characters.")
+                .long("only-latin-alphabet")
+                .conflicts_with_all(&["numeric", "printable-ascii", "printable-ascii-s"]),
+        )
         .get_matches();
 
     let number_of_characters: usize = matches
@@ -211,20 +261,40 @@ fn main() {
     } else if matches.is_present("printable-ascii-s") {
         OutputCharsType::PrintableAsciiWithSpace
     } else {
-        OutputCharsType::Alphanumeric
+        let is_upper_only = matches.is_present("only-upper-case");
+        let is_lower_only = matches.is_present("only-lower-case");
+        let is_latin_only = matches.is_present("only-latin-alphabet");
+        match (is_upper_only, is_lower_only, is_latin_only) {
+            (true, false, true) => OutputCharsType::LatinAlphabet {
+                use_upper_case: true,
+                use_lower_case: false,
+            },
+            (true, false, false) => OutputCharsType::LatinAlphabetAndNumeric {
+                use_upper_case: true,
+                use_lower_case: false,
+            },
+            (false, true, true) => OutputCharsType::LatinAlphabet {
+                use_upper_case: false,
+                use_lower_case: true,
+            },
+            (false, true, false) => OutputCharsType::LatinAlphabetAndNumeric {
+                use_upper_case: false,
+                use_lower_case: true,
+            },
+            (false, false, true) => OutputCharsType::LatinAlphabet {
+                use_upper_case: true,
+                use_lower_case: true,
+            },
+            (false, false, false) => OutputCharsType::LatinAlphabetAndNumeric {
+                use_upper_case: true,
+                use_lower_case: true,
+            },
+            _ => unreachable!(),
+        }
     };
-    let is_upper_only = matches.is_present("only-upper-case");
-    let is_lower_only = matches.is_present("only-lower-case");
 
     let is_stdout = atty::is(atty::Stream::Stdout);
-    let printing = |(i, s): (usize, String)| {
-        let s = if is_upper_only {
-            s.to_ascii_uppercase()
-        } else if is_lower_only {
-            s.to_ascii_lowercase()
-        } else {
-            s.to_owned()
-        };
+    let printing = |(i, s)| {
         if i == (number_of_lines - 1) && !is_stdout {
             print!("{}", s);
         } else {
