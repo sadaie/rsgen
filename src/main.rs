@@ -70,98 +70,10 @@
 
 use atty;
 use clap;
-use rand::{self, Rng};
 use rand_core::SeedableRng;
 use rand_xorshift;
+use rsgen::{gen_random_string_with_rng, OutputCharsType};
 use std::time::SystemTime;
-
-#[derive(Clone, Copy)]
-enum OutputCharsType {
-    LatinAlphabet {
-        use_upper_case: bool,
-        use_lower_case: bool,
-    },
-    LatinAlphabetAndNumeric {
-        use_upper_case: bool,
-        use_lower_case: bool,
-    },
-    Numeric,
-    PrintableAsciiWithoutSpace,
-    PrintableAsciiWithSpace,
-}
-
-fn gen_random_string_with_rng<R>(
-    rng: &mut R,
-    number_of_characters: usize,
-    output_chars_type: OutputCharsType,
-) -> String
-where
-    R: Rng,
-{
-    match output_chars_type {
-        OutputCharsType::LatinAlphabet {
-            use_upper_case,
-            use_lower_case,
-        } => {
-            let range = match (use_upper_case, use_lower_case) {
-                (true, true) => 26 + 26,
-                _ => 26,
-            };
-            let charset: &[u8] = match (use_upper_case, use_lower_case) {
-                (true, true) => b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz",
-                (true, false) => b"ABCDEFGHIJKLMNOPQRSTUVWXYZ",
-                (false, true) => b"abcdefghijklmnopqrstuvwxyz",
-                _ => unreachable!(),
-            };
-            let uniformed = rand::distributions::Uniform::from(0..range);
-            rng.sample_iter(&uniformed)
-                .take(number_of_characters)
-                .map(|n| charset[n as usize] as char)
-                .collect()
-        }
-        OutputCharsType::LatinAlphabetAndNumeric {
-            use_upper_case,
-            use_lower_case,
-        } => {
-            let range = match (use_upper_case, use_lower_case) {
-                (true, true) => 26 + 26 + 10,
-                _ => 26 + 10,
-            };
-            let charset: &[u8] = match (use_upper_case, use_lower_case) {
-                (true, true) => b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789",
-                (true, false) => b"ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789",
-                (false, true) => b"abcdefghijklmnopqrstuvwxyz0123456789",
-                _ => unreachable!(),
-            };
-            let uniformed = rand::distributions::Uniform::from(0..range);
-            rng.sample_iter(&uniformed)
-                .take(number_of_characters)
-                .map(|n| charset[n] as char)
-                .collect()
-        }
-        OutputCharsType::Numeric => {
-            let uniform = rand::distributions::Uniform::from(0..=9);
-            rng.sample_iter(&uniform)
-                .take(number_of_characters)
-                .filter_map(|n| std::char::from_digit(n as u32, 10))
-                .collect()
-        }
-        OutputCharsType::PrintableAsciiWithoutSpace => {
-            let uniform = rand::distributions::Uniform::from(0x21..=0x7e);
-            rng.sample_iter(&uniform)
-                .take(number_of_characters)
-                .filter_map(std::char::from_u32)
-                .collect()
-        }
-        OutputCharsType::PrintableAsciiWithSpace => {
-            let uniform = rand::distributions::Uniform::from(0x20..=0x7e);
-            rng.sample_iter(&uniform)
-                .take(number_of_characters)
-                .filter_map(std::char::from_u32)
-                .collect()
-        }
-    }
-}
 
 fn argument_validator(v: String) -> Result<(), String> {
     let error_message = "The argument value must be 1 or greater.".to_owned();

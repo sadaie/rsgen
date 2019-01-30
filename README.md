@@ -1,7 +1,31 @@
 # `rsgen`
-`rsgen` is a command line tool that generates random characters string(s).
+`rsgen` is a tiny library and command line tool that generates random characters string(s).
 
-## Install
+## Use as library
+
+[![documentation in docs.rs](https://docs.rs/rsgen/badge.svg)](https://docs.rs/rsgen)
+[![LICENSE](https://img.shields.io/github/license/sadaie/rsgen.svg?style=flat)](LICENSE)
+
+Add the following to your `Cargo.toml`:
+
+```toml
+[dependencies]
+rsgen = "0.2"
+```
+
+### Examaple
+
+```rust
+use rsgen::{gen_random_string, OutputCharsType};
+
+let output_chars_type = OutputCharsType::LatinAlphabetAndNumeric {
+    use_upper_case: true,
+    use_lower_case: true,
+};
+let _random_string = gen_random_string(32, output_chars_type);
+```
+
+## Install CLI tool
 
 **`rsgen` is written in Rust. Thus you should install the latest Rust ecosystem in advance.**  
 **refs. [rustup](https://rustup.rs/)**

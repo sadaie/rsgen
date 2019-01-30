@@ -1,12 +1,13 @@
 [package]
 name = "rsgen"
-version = "0.1.3"
+version = "0.2.0"
 authors = ["Sadaie Matsudaira <sadaie@matsuri-hi.me>"]
 edition = "2018"
 description = "Generates random characters string(s)."
 readme = "README.md"
 homepage = "https://github.com/sadaie/rsgen"
 repository = "https://github.com/sadaie/rsgen"
+documentation = "https://docs.rs/rsgen"
 keywords = ["CLI"]
 categories = ["command-line-utilities"]
 license = "MIT"
@@ -17,3 +18,10 @@ rand = "0.6.4"
 rand_xorshift = "0.1.1"
 rand_core = "0.3.0"
 atty = "0.2.11"
+
+[lib]
+name = "rsgen"
+
+[[bin]]
+name = "rsgen"
+doc = false
