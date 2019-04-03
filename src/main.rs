@@ -66,7 +66,7 @@
 //!
 //! ## License
 //!
-//! MIT lincense.  
+//! MIT license.  
 
 use atty;
 use clap;

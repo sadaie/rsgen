@@ -90,4 +90,4 @@ XBDSOETSLzUR
 
 ## License
 
-MIT lincense.  
+MIT license.  
